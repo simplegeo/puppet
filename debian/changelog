@@ -1,3 +1,9 @@
+puppet (2.6.1-0ubuntu2) lucid; urgency=low
+
+  * UNRELEASED
+
+ -- SimpleGeo Nerds <nerds@simplegeo.com>  Wed, 20 Apr 2011 20:06:20 +0000
+
 puppet (2.6.1-0ubuntu2) maverick; urgency=low
 
   * debian/puppetmaster-passenger.postinst: Use cacrl instead of hostcrl to
