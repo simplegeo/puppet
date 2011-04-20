@@ -1,7 +1,13 @@
+puppet (2.6.1-0sg0) unstable; urgency=low
+
+  * simplegeo build for backporting to lucid
+
+ -- Paul Lathrop <paul@simplegeo.com>  Wed, 20 Apr 2011 01:05:12 -0700
+
 puppet (2.6.1-0ubuntu2) maverick; urgency=low
 
   * debian/puppetmaster-passenger.postinst: Use cacrl instead of hostcrl to
-    set the location of the CRL in apache2 configuration. Fix apache2 
+    set the location of the CRL in apache2 configuration. Fix apache2
     configuration on upgrade as well (LP: #641001).
 
  -- Mathias Gug <mathiaz@ubuntu.com>  Tue, 21 Sep 2010 13:53:10 -0400
@@ -14,7 +20,7 @@ puppet (2.6.1-0ubuntu1) maverick; urgency=low
     installed (Closes: #596163)
 
   [ Mathias Gug ]
-  * New upstream version. 
+  * New upstream version.
 
  -- Mathias Gug <mathiaz@ubuntu.com>  Tue, 14 Sep 2010 12:05:29 -0400
 
@@ -23,7 +29,7 @@ puppet (2.6.1~rc4-0ubuntu1) maverick; urgency=low
   [ Mathias Gug ]
   * New upstream version:
     - Fix "Puppet standalone broken" (Closes: #594575)
-  * test/lib/puppettest/fakes.rb: Fix puppettest to use puppet system 
+  * test/lib/puppettest/fakes.rb: Fix puppettest to use puppet system
     library.
 
   [ Stig Sandbeck Mathisen ]
@@ -40,7 +46,7 @@ puppet (2.6.1~rc3-1) experimental; urgency=low
   * Fix test suite to run from a package install rather then from the source
     directory:
     + Rakefile: use system puppet.rb file to detect version.
-    + spec/unit/application/apply_spec.rb: Fix test suite to use puppet 
+    + spec/unit/application/apply_spec.rb: Fix test suite to use puppet
       system library.
     + spec/spec_helper.rb: disable gem.
   * Fix init service provider to correctly check the status of services
@@ -50,7 +56,7 @@ puppet (2.6.1~rc3-1) experimental; urgency=low
     + debian/etckeeper-commit-post, debian/etckeeper-commit-pre:
        Call "etckeeper commit" before and after catalog runs.
        Silently bail out if etckeeper is not available.
-    + debian/puppet.conf: Call out to the etckeeper hooks using 
+    + debian/puppet.conf: Call out to the etckeeper hooks using
        the prerun_command and postrun_command hooks.
     + debian/rules: Install the etckeeper hook scripts in /etc/puppet.
     + debian/README.Debian: add note about etckeeper integration.
@@ -113,7 +119,7 @@ puppet (0.25.5-1) unstable; urgency=low
 
 puppet (0.25.4-6) unstable; urgency=low
 
-  * clarify passenger options in default/puppetmaster 
+  * clarify passenger options in default/puppetmaster
   * add patch to ext/rack/files/apache2.conf for debian-specific settings
   * debian/control: add version depends on librack-ruby
   * additional start-stop-daemon fix for puppet.init and puppetqd.init
@@ -140,9 +146,9 @@ puppet (0.25.4-4) unstable; urgency=low
   [ Micah Anderson ]
   * add Suggests: libselinux-ruby1.8 as puppet supports it, but only
     if the library is present
-  * cherry-pick: add puppetmasterd dbconnections option to increase 
+  * cherry-pick: add puppetmasterd dbconnections option to increase
     the rails 'max pool size' (redmine: #2568)
-  * fix puppetqd initscript status operation 
+  * fix puppetqd initscript status operation
 
   [ Andrew Pollock ]
   * debian/rules: don't install config.ru owned by the puppet user (closes:
@@ -165,11 +171,11 @@ puppet (0.25.4-3) unstable; urgency=low
   * Fix puppet-el.emacsen-startup script to be properly installed
   * debian/puppetmaster.init: Fix init stop action to not fail if the
     puppetmaster is already stopped, Thanks Mathias Gug (Closes: #574677)
-  * Add Suggests: stompserver/libstomp-ruby1.8 - needed for puppetqd 
+  * Add Suggests: stompserver/libstomp-ruby1.8 - needed for puppetqd
   * Add README.queueing to puppetmaster package which describes puppetqd
   * Add /etc/init.d/puppetqd and defaults in /etc/defaults/puppetmaster
   * Switch to dpkg-source 3.0 (quilt) format
- 
+
  -- Micah Anderson <micah@debian.org>  Tue, 16 Mar 2010 12:27:07 -0400
 
 puppet (0.25.4-2) unstable; urgency=low
@@ -191,7 +197,7 @@ puppet (0.25.4-1) unstable; urgency=low
 
   [Nigel Kersten ]
   * New upstream version 0.25.4
- 
+
   [ Micah Anderson ]
   * Fix debian/rules typo in install of puppet-mode-init.el
   * Fix which package puppet-mode-init.el gets installed into
@@ -276,7 +282,7 @@ puppet (0.24.8-2) unstable; urgency=high
   [ Andrew Pollock ]
   * debian/control: add rdoc, libopenssl-ruby and facter to build dependencies
   * debian/control: depend on ruby1.8 instead of ruby to placate Lintian
-  * debian/puppet.install: brown paper bag release averted; install 
+  * debian/puppet.install: brown paper bag release averted; install
     /usr/lib/ruby/1.8
   * debian/rules: ensure permissions on everything under /usr/lib/ruby/1.8 is
     correct
@@ -325,7 +331,7 @@ puppet (0.24.6-1) experimental; urgency=low
     - comparison of String with 0 failed (Closes: #500848)
     - filename cannot handle ++ (Closes: #502163)
     - tidy must specify size, age or both (Closes: #500852)
-	
+
  -- Micah Anderson <micah@debian.org>  Sat, 29 Nov 2008 13:59:25 -0500
 
 puppet (0.24.5-3) unstable; urgency=medium
@@ -386,7 +392,7 @@ puppet (0.24.4-8) unstable; urgency=low
  -- Micah Anderson <micah@debian.org>  Sat, 31 May 2008 11:39:47 -0400
 
 puppet (0.24.4-7) unstable; urgency=low
-  
+
   * Update emacs-mode with changes cherry-picked from rra's repository
   * Fix typo in puppetmaster.init (Closes: #480019)
   * Fix variable name in /etc/default/puppetmaster comments
@@ -396,9 +402,9 @@ puppet (0.24.4-7) unstable; urgency=low
   * Added debian/puppetmaster.dirs containing etc/puppet/manifests
   * Remove puppet group on purge (Closes: #481511)
   * Remove old config files and stray directories (Closes: #454681)
-  
+
  -- Micah Anderson <micah@debian.org>>  Sat, 03 May 2008 16:18:32 -0400
-  
+
 puppet (0.24.4-6) unstable; urgency=low
 
   * Remove bashisms in puppetmaster.init
@@ -408,7 +414,7 @@ puppet (0.24.4-6) unstable; urgency=low
 
 puppet (0.24.4-5) unstable; urgency=low
 
-  * Fix missing --pidfile piece for mongrel startup and make 
+  * Fix missing --pidfile piece for mongrel startup and make
     stop consistent, thanks Bart Cortooms (Closes: #476840)
   * Add trailing newline missing from default files
 
@@ -421,7 +427,7 @@ puppet (0.24.4-4) unstable; urgency=low
     on multiple ports
   * Remove no longer necessary .svn cleaning from debian/rules
   * Added $network and $named appropriated places in the LSB
-    headers in puppet and puppetmaster initscripts, 
+    headers in puppet and puppetmaster initscripts,
     thanks Sam Quigley
   * Install ralsh (Closes: #476629)
   * Cherry-pick upstream patches from 0.24.x branch:
@@ -554,7 +560,7 @@ puppet (0.23.2-10) unstable; urgency=low
 
 puppet (0.23.2-9) unstable; urgency=low
 
-  * Recycle the HTTP connection if we get an EPIPE during a request. 
+  * Recycle the HTTP connection if we get an EPIPE during a request.
     Closes: #444177.  Thanks to Jos Backus for helping with testing.
 
  -- Matthew Palmer <mpalmer@debian.org>  Thu, 27 Sep 2007 09:55:34 +1000
@@ -563,7 +569,7 @@ puppet (0.23.2-8) unstable; urgency=low
 
   * Remove extraneous debugging output accidentally left behind in the last
     release.
-  * Fix spelling mistakes in debian/control and debian/puppet.preinst. 
+  * Fix spelling mistakes in debian/control and debian/puppet.preinst.
     Closes: #444158.
 
  -- Matthew Palmer <mpalmer@debian.org>  Thu, 27 Sep 2007 07:45:07 +1000
@@ -713,7 +719,7 @@ puppet (0.18.4-1) unstable; urgency=low
     - Properly detect all services, including those in rcS.d.
       (Closes: #378351)
   * Add Homepage: to the long description.  (Closes: #377896)
-  
+
  -- Matthew Palmer <mpalmer@debian.org>  Mon, 24 Jul 2006 19:46:06 +1000
 
 puppet (0.18.3-1) unstable; urgency=low
