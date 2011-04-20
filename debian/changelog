@@ -1,3 +1,12 @@
+puppet (2.6.1-0ubuntu2) lucid; urgency=low
+
+  [ Paul Lathrop ]
+  * update patches so they apply cleanly to upstream
+
+  [ SimpleGeo Nerds ]
+
+ -- SimpleGeo Nerds <nerds@simplegeo.com>  Wed, 20 Apr 2011 20:01:03 +0000
+
 puppet (2.6.1-0ubuntu2) maverick; urgency=low
 
   * debian/puppetmaster-passenger.postinst: Use cacrl instead of hostcrl to
