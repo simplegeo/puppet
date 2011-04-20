@@ -1,0 +1,283 @@
+Description: Upstream changes introduced in version 2.6.1-0ubuntu2
+ This patch has been created by dpkg-source during the package build.
+ Here's the last changelog entry, hopefully it gives details on why
+ those changes were made:
+ .
+ puppet (2.6.1-0ubuntu2) maverick; urgency=low
+ .
+   * debian/puppetmaster-passenger.postinst: Use cacrl instead of hostcrl to
+     set the location of the CRL in apache2 configuration. Fix apache2
+     configuration on upgrade as well (LP: #641001).
+ .
+ The person named in the Author field signed this changelog entry.
+Author: Mathias Gug <mathiaz@ubuntu.com>
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/641001
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- puppet-2.6.1.orig/install.rb
++++ puppet-2.6.1/install.rb
+@@ -464,7 +464,7 @@ prepare_installation
+ #run_tests(tests) if InstallOptions.tests
+ #build_rdoc(rdoc) if InstallOptions.rdoc
+ #build_ri(ri) if InstallOptions.ri
+-#build_man(bins, sbins) if InstallOptions.man
++build_man(bins, sbins) if InstallOptions.man
+ do_bins(sbins, InstallOptions.sbin_dir)
+ do_bins(bins, InstallOptions.bin_dir)
+ do_libs(libs)
+--- puppet-2.6.1.orig/Rakefile
++++ puppet-2.6.1/Rakefile
+@@ -9,7 +9,7 @@ require 'spec'
+ require 'spec/rake/spectask'
+ 
+ module Puppet
+-    PUPPETVERSION = File.read('lib/puppet.rb')[/PUPPETVERSION *= *'(.*)'/,1] or fail "Couldn't find PUPPETVERSION"
++    PUPPETVERSION = File.read('/usr/lib/ruby/1.8/puppet.rb')[/PUPPETVERSION *= *'(.*)'/,1] or fail "Couldn't find PUPPETVERSION"
+ end
+ 
+ Dir['tasks/**/*.rake'].each { |t| load t }
+--- puppet-2.6.1.orig/CHANGELOG
++++ puppet-2.6.1/CHANGELOG
+@@ -1,5 +1,13 @@
++2.6.1
++=====
++14f871d  [#4756] addendum for #4756
++9bdfe69  Fix for Bug #4756 - Providers no longer respect missing features Restored deleted lines from type.rb and reinstated unit tests
++14b3340  Fix for #4736 -- preserve case of defined resources
++bd973a2  Fix for #4637 --use of namevar missed in refactor
++
+ 2.6.1rc4
+ ========
++efa834a  Updated CHANGELOG for 2.6.1rc4
+ 763e7cb  Minimal fix for #4691 -- class name uppercased in $name
+ 4a9c857  Fix for #4693 -- implicit stages should never be serialized
+ fa4d32c  Fix for #4646 -- Missing stub
+--- puppet-2.6.1.orig/spec/spec_helper.rb
++++ puppet-2.6.1/spec/spec_helper.rb
+@@ -12,7 +12,7 @@ ARGV.clear
+ 
+ require 'puppet'
+ require 'mocha'
+-gem 'rspec', '>=1.2.9'
++#gem 'rspec', '>=1.2.9'
+ require 'spec/autorun'
+ 
+ # So everyone else doesn't have to include this base constant.
+--- puppet-2.6.1.orig/spec/unit/type/service_spec.rb
++++ puppet-2.6.1/spec/unit/type/service_spec.rb
+@@ -76,10 +76,18 @@ describe Puppet::Type.type(:service), "w
+ 
+   it "should allow setting the :enable parameter if the provider has the :enableable feature" do
+     Puppet::Type.type(:service).defaultprovider.stubs(:supports_parameter?).returns(true)
++    Puppet::Type.type(:service).defaultprovider.expects(:supports_parameter?).with(Puppet::Type.type(:service).attrclass(:enable)).returns(true)
+     svc = Puppet::Type.type(:service).new(:name => "yay", :enable => true)
+     svc.should(:enable).should == :true
+   end
+ 
++  it "should not allow setting the :enable parameter if the provider is missing the :enableable feature" do
++    Puppet::Type.type(:service).defaultprovider.stubs(:supports_parameter?).returns(true)
++    Puppet::Type.type(:service).defaultprovider.expects(:supports_parameter?).with(Puppet::Type.type(:service).attrclass(:enable)).returns(false)
++    svc = Puppet::Type.type(:service).new(:name => "yay", :enable => true)
++    svc.should(:enable).should be_nil
++  end
++
+   it "should split paths on ':'" do
+     FileTest.stubs(:exist?).returns(true)
+     FileTest.stubs(:directory?).returns(true)
+--- puppet-2.6.1.orig/spec/unit/type/user_spec.rb
++++ puppet-2.6.1/spec/unit/type/user_spec.rb
+@@ -262,6 +262,11 @@ describe user do
+   end
+ 
+   describe "when user has roles" do
++    before do
++      # To test this feature, we have to support it.
++      user.new(:name => "foo").provider.class.stubs(:feature?).returns(true)
++    end
++
+     it "should autorequire roles" do
+       testuser = Puppet::Type.type(:user).new(:name => "testuser")
+       testuser[:roles] = "testrole"
+--- puppet-2.6.1.orig/test/lib/puppettest/fakes.rb
++++ puppet-2.6.1/test/lib/puppettest/fakes.rb
+@@ -1,4 +1,4 @@
+-require File.expand_path(File.join(File.dirname(__FILE__), '../../../lib/puppet/util'))
++require '/usr/lib/ruby/1.8/puppet/util'
+ 
+ module PuppetTest
+   # A baseclass for the faketypes.
+--- puppet-2.6.1.orig/test/ral/manager/attributes.rb
++++ puppet-2.6.1/test/ral/manager/attributes.rb
+@@ -229,7 +229,10 @@ class TestTypeAttributes < Test::Unit::T
+       end
+       yes.each { |a| assert(resource.should(a), "Did not get value for #{a} in #{prov.name}") }
+       no.each do |a|
+-        # These may or may not get passed to the provider. We shouldn't care.
++        assert_nil(resource.should(a), "Got value for unsupported %s in %s" % [a, prov.name])
++        if Puppet::Util::Log.sendlevel?(:info)
++          assert(@logs.find { |l| l.message =~ /not managing attribute #{a}/ and l.level == :info }, "No warning about failed %s" % a)
++        end
+       end
+ 
+       @logs.clear
+--- puppet-2.6.1.orig/lib/puppet/type.rb
++++ puppet-2.6.1/lib/puppet/type.rb
+@@ -410,13 +410,15 @@ class Type
+ 
+     property = self.newattr(name)
+ 
+-    begin
+-      # make sure the parameter doesn't have any errors
+-      property.value = value
+-    rescue => detail
+-      error = Puppet::Error.new("Parameter #{name} failed: #{detail}")
+-      error.set_backtrace(detail.backtrace)
+-      raise error
++    if property
++      begin
++        # make sure the parameter doesn't have any errors
++        property.value = value
++      rescue => detail
++        error = Puppet::Error.new("Parameter #{name} failed: #{detail}")
++        error.set_backtrace(detail.backtrace)
++        raise error
++      end
+     end
+ 
+     nil
+@@ -472,6 +474,12 @@ class Type
+       raise Puppet::Error, "Resource type #{self.class.name} does not support parameter #{name}"
+     end
+ 
++    if provider and ! provider.class.supports_parameter?(klass)
++      missing = klass.required_features.find_all { |f| ! provider.class.feature?(f) }
++      info "Provider %s does not support features %s; not managing attribute %s" % [provider.class.name, missing.join(", "), name]
++      return nil
++    end
++
+     return @parameters[name] if @parameters.include?(name)
+ 
+     @parameters[name] = klass.new(:resource => self)
+--- puppet-2.6.1.orig/lib/puppet/application/describe.rb
++++ puppet-2.6.1/lib/puppet/application/describe.rb
+@@ -130,7 +130,7 @@ class TypeDoc
+       a[0].to_s <=> b[0].to_s
+     }.each { |name, doc|
+       print "\n- **#{name}**"
+-      if type.namevar == name and name != :name
++      if type.key_attributes.include?(name) and name != :name
+         puts " (*namevar*)"
+       else
+         puts ""
+--- puppet-2.6.1.orig/lib/puppet/provider/service/init.rb
++++ puppet-2.6.1/lib/puppet/provider/service/init.rb
+@@ -134,7 +134,15 @@ Puppet::Type.type(:service).provide :ini
+   # we just return that; otherwise, we return false, which causes it to
+   # fallback to other mechanisms.
+   def statuscmd
+-    (@resource[:hasstatus] == :true) && [initscript, :status]
++      if @resource[:hasstatus] == :true then 
++          # Workaround the fact that initctl status command doesn't return
++          # proper exit codes. Can be removed once LP: #552786 is fixed.
++          if File.symlink?(initscript) && File.readlink(initscript) == "/lib/init/upstart-job" then
++              ['sh', '-c', "LANG=C invoke-rc.d #{File::basename(initscript)} status | grep -q '^#{File::basename(initscript)}.*running'" ]
++          else
++              [initscript, :status ]
++          end
++      end
+   end
+ 
+ end
+--- puppet-2.6.1.orig/lib/puppet/resource/type.rb
++++ puppet-2.6.1/lib/puppet/resource/type.rb
+@@ -233,8 +233,13 @@ class Puppet::Resource::Type
+       resource[param] = value
+     end
+ 
+-    scope.setvar("title", resource.title) unless set.include? :title
+-    scope.setvar("name", resource.name.to_s.downcase) unless set.include? :name
++    if @type == :hostclass
++      scope.setvar("title", resource.title.to_s.downcase) unless set.include? :title
++      scope.setvar("name",  resource.name.to_s.downcase ) unless set.include? :name
++    else
++      scope.setvar("title", resource.title              ) unless set.include? :title
++      scope.setvar("name",  resource.name               ) unless set.include? :name
++    end
+     scope.setvar("module_name", module_name) if module_name and ! set.include? :module_name
+ 
+     if caller_name = scope.parent_module_name and ! set.include?(:caller_module_name)
+--- puppet-2.6.1.orig/ext/rack/files/apache2.conf
++++ puppet-2.6.1/ext/rack/files/apache2.conf
+@@ -1,33 +1,4 @@
+-# performance settings, from http://reductivelabs.com/trac/puppet/wiki/UsingPassenger
+-
+-# Set to 5 min (300 seconds) or less. The shorting this option allows for
+-# puppetmasterd to get refreshed at some interval. This option is also
+-# somewhat dependent upon the amount of puppetd nodes connecting and at what
+-# interval.
+-PassengerPoolIdleTime 300
+-
+-# to 15% more instances than what's needed. This will allow idle
+-# puppetmasterd to get recycled. The net effect is less memory will be used,
+-# not more.
+-PassengerMaxPoolSize 15
+-
+-# Since communication with the puppetmaster from puppetd is a long process
+-# (more than 20 seconds in most cases) and will allow for processes to get
+-# recycled better
+-PassengerUseGlobalQueue on
+-
+-# The additional Passenger features for apache compatibility are not needed
+-# with Puppet.
+-PassengerHighPerformance on
+-
+-# Whether Passenger should automatically detect whether a virtual host’s
+-# document root is a Rack application. The default is on. Because
+-# RackBaseURI is set, this does not need to be on
+-RackAutoDetect Off
+-
+-# Whether Phusion Passenger should automatically detect whether a virtual
+-# host’s document root is a Ruby on Rails application. The default is on.
+-RailsAutoDetect Off
++# Based on http://projects.puppetlabs.com/projects/1/wiki/Using_Passenger
+ 
+ Listen 8140
+ 
+@@ -43,12 +14,24 @@ Listen 8140
+         # If Apache complains about invalid signatures on the CRL, you can try disabling
+         # CRL checking by commenting the next line, but this is not recommended.
+         SSLCARevocationFile     /var/lib/puppet/ssl/ca/ca_crl.pem
++        # Set to require if this puppetmaster doesn't issue certificates
++        # to puppet clients.
++        # NB: this requires SSLCACertificateFile to include the CA cert 
++        #     issuing puppet client certificate.
+         SSLVerifyClient optional
+         SSLVerifyDepth  1
+         SSLOptions +StdEnvVars
+ 
+-        DocumentRoot /usr/share/puppet/rack/puppetmasterd/public
++        # Passenger options that can be set in a virtual host
++        # configuration block.
++        PassengerHighPerformance on
++        PassengerStatThrottleRate 120
++        PassengerUseGlobalQueue on
++        RackAutoDetect Off
++        RailsAutoDetect Off
+         RackBaseURI /
++
++        DocumentRoot /usr/share/puppet/rack/puppetmasterd/public
+         <Directory /usr/share/puppet/rack/puppetmasterd/>
+                 Options None
+                 AllowOverride None
