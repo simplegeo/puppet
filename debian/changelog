@@ -1,3 +1,9 @@
+puppet (2.7.1-0sg58) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Paul Lathrop <paul@simplegeo.com>  Fri, 22 Jul 2011 12:20:42 -0700
+
 puppet (2.6.1-0sg57) lucid; urgency=low
 
   * UNRELEASED
