@@ -1,3 +1,16 @@
+puppet (2.7.1-0sg62) maverick; urgency=low
+
+  [ Paul Lathrop ]
+  * Update patches for 2.7.1
+  * undo rename. clearly wrong
+  * update debian/docs
+  * Update patches.
+  * Remove deprecated docs.
+
+  [ SimpleGeo Nerds ]
+
+ -- SimpleGeo Nerds <nerds@simplegeo.com>  Fri, 22 Jul 2011 19:40:52 +0000
+
 puppet (2.7.1-0sg58) unstable; urgency=low
 
   * New upstream version.
