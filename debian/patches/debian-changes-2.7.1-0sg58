@@ -1,4 +1,4 @@
-Description: Upstream changes introduced in version 2.6.1-0ubuntu2
+PUPPETVERSIONDescription: Upstream changes introduced in version 2.6.1-0ubuntu2
  This patch has been created by dpkg-source during the package build.
  Here's the last changelog entry, hopefully it gives details on why
  those changes were made:
@@ -26,39 +26,6 @@ Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
 Last-Update: <YYYY-MM-DD>
 
---- puppet-2.6.1.orig/install.rb
-+++ puppet-2.6.1/install.rb
-@@ -464,7 +464,7 @@ prepare_installation
- #run_tests(tests) if InstallOptions.tests
- #build_rdoc(rdoc) if InstallOptions.rdoc
- #build_ri(ri) if InstallOptions.ri
--#build_man(bins, sbins) if InstallOptions.man
-+build_man(bins, sbins) if InstallOptions.man
- do_bins(sbins, InstallOptions.sbin_dir)
- do_bins(bins, InstallOptions.bin_dir)
- do_libs(libs)
---- puppet-2.6.1.orig/Rakefile
-+++ puppet-2.6.1/Rakefile
-@@ -9,7 +9,7 @@ require 'spec'
- require 'spec/rake/spectask'
-
- module Puppet
--    PUPPETVERSION = File.read('lib/puppet.rb')[/PUPPETVERSION *= *'(.*)'/,1] or fail "Couldn't find PUPPETVERSION"
-+    PUPPETVERSION = File.read('/usr/lib/ruby/1.8/puppet.rb')[/PUPPETVERSION *= *'(.*)'/,1] or fail "Couldn't find PUPPETVERSION"
- end
-
- Dir['tasks/**/*.rake'].each { |t| load t }
---- puppet-2.6.1.orig/spec/spec_helper.rb
-+++ puppet-2.6.1/spec/spec_helper.rb
-@@ -12,7 +12,7 @@ ARGV.clear
-
- require 'puppet'
- require 'mocha'
--gem 'rspec', '>=1.2.9'
-+#gem 'rspec', '>=1.2.9'
- require 'spec/autorun'
-
- # So everyone else doesn't have to include this base constant.
 --- puppet-2.6.1.orig/test/lib/puppettest/fakes.rb
 +++ puppet-2.6.1/test/lib/puppettest/fakes.rb
 @@ -1,4 +1,4 @@
