@@ -64,6 +64,7 @@ class Puppet::Parser::Resource < Puppet::Resource
 
   # Retrieve the associated definition and evaluate it.
   def evaluate
+    return if evaluated?
     @evaluated = true
     if klass = resource_type and ! builtin_type?
       finish
@@ -93,6 +94,7 @@ class Puppet::Parser::Resource < Puppet::Resource
     @finished = true
     add_defaults
     add_metaparams
+    add_scope_tags
     validate
   end
 
@@ -239,7 +241,7 @@ class Puppet::Parser::Resource < Puppet::Resource
 
   def add_backward_compatible_relationship_param(name)
     # Skip metaparams for which we get no value.
-    return unless val = scope.lookupvar(name.to_s, false) and val != :undefined
+    return unless val = scope.lookupvar(name.to_s) and val != :undefined
 
     # The default case: just set the value
     set_parameter(name, val) and return unless @parameters[name]
@@ -256,6 +258,12 @@ class Puppet::Parser::Resource < Puppet::Resource
     Puppet::Type.eachmetaparam do |name|
       next unless self.class.relationship_parameter?(name)
       add_backward_compatible_relationship_param(name) if compat_mode
+    end
+  end
+
+  def add_scope_tags
+    if scope_resource = scope.resource
+      tag(*scope_resource.tags)
     end
   end
 

@@ -1,6 +1,5 @@
-#!/usr/bin/env ruby
-
-require File.dirname(__FILE__) + '/../../spec_helper'
+#!/usr/bin/env rspec
+require 'spec_helper'
 
 describe Puppet::Parser::Parser do
   module ParseMatcher
@@ -11,7 +10,7 @@ describe Puppet::Parser::Parser do
       end
 
       def result_instance
-        @result.hostclass("").code[0]
+        @result.code[0]
       end
 
       def matches?(string)
@@ -44,7 +43,7 @@ describe Puppet::Parser::Parser do
       end
 
       def result_instance
-        @result.hostclass("").code[0]
+        @result.code[0]
       end
 
       def matches?(string)
@@ -85,7 +84,9 @@ describe Puppet::Parser::Parser do
       class test {}
       """)
 
-      ast.hostclass("test").doc.should == "comment\n"
+      ast.code[0].should be_a(Puppet::Parser::AST::Hostclass)
+      ast.code[0].name.should == 'test'
+      ast.code[0].instantiate('')[0].doc.should == "comment\n"
     end
   end
 
@@ -108,6 +109,13 @@ describe Puppet::Parser::Parser do
 
     it "should correctly set the arrow type of a relationship" do
       "Notify[foo] <~ Notify[bar]".should parse_with { |rel| rel.arrow == "<~" }
+    end
+
+    it "should be able to parse deep hash access" do
+      %q{
+        $hash = { 'a' => { 'b' => { 'c' => 'it works' } } }
+        $out = $hash['a']['b']['c']
+      }.should parse_with { |v| v.value.is_a?(Puppet::Parser::AST::ASTHash) }
     end
   end
 end

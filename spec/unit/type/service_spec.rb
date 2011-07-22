@@ -1,6 +1,5 @@
-#!/usr/bin/env ruby
-
-require File.dirname(__FILE__) + '/../../spec_helper'
+#!/usr/bin/env rspec
+require 'spec_helper'
 
 describe Puppet::Type.type(:service) do
   it "should have an :enableable feature that requires the :enable, :disable, and :enabled? methods" do
@@ -64,6 +63,10 @@ describe Puppet::Type.type(:service), "when validating attribute values" do
 
   it "should support :false as a value to :hasstatus" do
     Puppet::Type.type(:service).new(:name => "yay", :hasstatus => :false)
+  end
+
+  it "should specify :true as the default value of hasstatus" do
+    Puppet::Type.type(:service).new(:name => "yay")[:hasstatus].should == :true
   end
 
   it "should support :true as a value to :hasrestart" do

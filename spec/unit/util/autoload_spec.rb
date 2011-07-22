@@ -1,6 +1,5 @@
-#!/usr/bin/env ruby
-
-Dir.chdir(File.dirname(__FILE__)) { (s = lambda { |f| File.exist?(f) ? require(f) : Dir.chdir("..") { s.call(f) } }).call("spec/spec_helper.rb") }
+#!/usr/bin/env rspec
+require 'spec_helper'
 
 require 'puppet/util/autoload'
 
@@ -52,9 +51,9 @@ describe Puppet::Util::Autoload do
       @autoload.search_directories.should == %w{/one /two /libdir1 /lib/dir/two /third/lib/dir} + $LOAD_PATH
     end
 
-    it "should include in its search path all of the search directories that have a subdirectory matching the autoload path" do
+    it "should include in its search path all of the unique search directories that have a subdirectory matching the autoload path" do
       @autoload = Puppet::Util::Autoload.new("foo", "loaddir")
-      @autoload.expects(:search_directories).returns %w{/one /two /three}
+      @autoload.expects(:search_directories).returns %w{/one /two /three /three}
       FileTest.expects(:directory?).with("/one/loaddir").returns true
       FileTest.expects(:directory?).with("/two/loaddir").returns false
       FileTest.expects(:directory?).with("/three/loaddir").returns true
@@ -104,14 +103,14 @@ describe Puppet::Util::Autoload do
     end
 
     [RuntimeError, LoadError, SyntaxError].each do |error|
-      it "should die an if a #{error.to_s} exception is thrown" do
+      it "should die an if a #{error.to_s} exception is thrown", :'fails_on_ruby_1.9.2' => true do
         Kernel.expects(:require).raises error
 
         lambda { @autoload.loadall }.should raise_error(Puppet::Error)
       end
     end
 
-    it "should require the full path to the file" do
+    it "should require the full path to the file", :'fails_on_ruby_1.9.2' => true do
       Kernel.expects(:require).with("/path/to/file.rb")
 
       @autoload.loadall

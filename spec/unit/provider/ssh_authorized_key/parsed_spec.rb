@@ -1,25 +1,17 @@
-#!/usr/bin/env ruby
-
-require File.dirname(__FILE__) + '/../../../spec_helper'
-
+#!/usr/bin/env rspec
+require 'spec_helper'
+require 'shared_behaviours/all_parsedfile_providers'
 require 'puppet_spec/files'
-require 'puppettest/support/utils'
-require 'puppettest/fileparsing'
-require 'tmpdir'
-require 'puppettest/fakes'
 
 provider_class = Puppet::Type.type(:ssh_authorized_key).provider(:parsed)
 
 describe provider_class do
   include PuppetSpec::Files
-  extend PuppetTest::Support::Utils
-  include PuppetTest
-  include PuppetTest::FileParsing
 
   before :each do
     @sshauthkey_class = Puppet::Type.type(:ssh_authorized_key)
     @provider = @sshauthkey_class.provider(:parsed)
-    @keyfile = File.join(Dir.tmpdir, 'authorized_keys')
+    @keyfile = tmpfile('authorized_keys')
     @provider.any_instance.stubs(:target).returns @keyfile
     @user = 'random_bob'
     Puppet::Util.stubs(:uid).with(@user).returns 12345
@@ -30,15 +22,13 @@ describe provider_class do
   end
 
   def mkkey(args)
-    fakeresource = fakeresource(:ssh_authorized_key, args[:name])
-    fakeresource.stubs(:should).with(:user).returns @user
-    fakeresource.stubs(:should).with(:target).returns @keyfile
-
-    key = @provider.new(fakeresource)
+    args[:target] = @keyfile
+    args[:user]   = @user
+    resource = Puppet::Type.type(:ssh_authorized_key).new(args)
+    key = @provider.new(resource)
     args.each do |p,v|
       key.send(p.to_s + "=", v)
     end
-
     key
   end
 
@@ -51,38 +41,28 @@ describe provider_class do
     @provider.target_object(@keyfile).read
   end
 
-  fakedata("data/providers/ssh_authorized_key/parsed").each { |file|
-    it "should be able to parse example data in #{file}" do
-      fakedataparse(file)
-    end
-  }
+  it_should_behave_like "all parsedfile providers", provider_class
 
   it "should be able to generate a basic authorized_keys file" do
 
-    key = mkkey(
-      {
-        :name => "Just Testing",
-        :key => "AAAAfsfddsjldjgksdflgkjsfdlgkj",
-        :type => "ssh-dss",
-        :ensure => :present,
-
-        :options => [:absent]
-    })
+    key = mkkey(:name    => "Just Testing",
+                :key     => "AAAAfsfddsjldjgksdflgkjsfdlgkj",
+                :type    => "ssh-dss",
+                :ensure  => :present,
+                :options => [:absent]
+              )
 
     genkey(key).should == "ssh-dss AAAAfsfddsjldjgksdflgkjsfdlgkj Just Testing\n"
   end
 
   it "should be able to generate a authorized_keys file with options" do
 
-    key = mkkey(
-      {
-        :name => "root@localhost",
-        :key => "AAAAfsfddsjldjgksdflgkjsfdlgkj",
-        :type => "ssh-rsa",
-        :ensure => :present,
-
-        :options => ['from="192.168.1.1"', "no-pty", "no-X11-forwarding"]
-    })
+    key = mkkey(:name    => "root@localhost",
+                :key     => "AAAAfsfddsjldjgksdflgkjsfdlgkj",
+                :type    => "ssh-rsa",
+                :ensure  => :present,
+                :options => ['from="192.168.1.1"', "no-pty", "no-X11-forwarding"]
+                )
 
     genkey(key).should == "from=\"192.168.1.1\",no-pty,no-X11-forwarding ssh-rsa AAAAfsfddsjldjgksdflgkjsfdlgkj root@localhost\n"
   end
@@ -105,6 +85,7 @@ describe provider_class do
   before :each do
     @resource = stub("resource", :name => "foo")
     @resource.stubs(:[]).returns "foo"
+    @resource.class.stubs(:key_attributes).returns( [:name] )
 
     @provider = provider_class.new(@resource)
     provider_class.stubs(:filetype).returns(Puppet::Util::FileType::FileTypeRam)

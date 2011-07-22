@@ -98,7 +98,7 @@ module Puppet
     cached_attr(:content) do
       raise Puppet::DevError, "No source for content was stored with the metadata" unless metadata.source
 
-      unless tmp = Puppet::FileServing::Content.find(metadata.source)
+      unless tmp = Puppet::FileServing::Content.indirection.find(metadata.source)
         fail "Could not find any content at %s" % metadata.source
       end
       tmp.content
@@ -114,6 +114,7 @@ module Puppet
         param_name = (metadata_method == :checksum) ? :content : metadata_method
         next if metadata_method == :owner and !Puppet.features.root?
         next if metadata_method == :checksum and metadata.ftype == "directory"
+        next if metadata_method == :checksum and metadata.ftype == "link" and metadata.links == :manage
 
         if resource[param_name].nil? or resource[param_name] == :absent
           resource[param_name] = metadata.send(metadata_method)
@@ -132,10 +133,6 @@ module Puppet
       end
     end
 
-    def pinparams
-      [:mode, :type, :owner, :group, :content]
-    end
-
     def found?
       ! (metadata.nil? or metadata.ftype.nil?)
     end
@@ -148,7 +145,7 @@ module Puppet
       result = nil
       value.each do |source|
         begin
-          if data = Puppet::FileServing::Metadata.find(source)
+          if data = Puppet::FileServing::Metadata.indirection.find(source)
             result = data
             result.source = source
             break
@@ -159,17 +156,6 @@ module Puppet
       end
       fail "Could not retrieve information from source(s) #{value.join(", ")}" unless result
       result
-    end
-
-    # Make sure we're also checking the checksum
-    def value=(value)
-      super
-
-      checks = (pinparams + [:ensure])
-      checks.delete(:checksum)
-
-      resource[:audit] = checks
-      resource[:checksum] = :md5 unless resource.property(:checksum)
     end
 
     def local?

@@ -52,7 +52,7 @@ the exact same outcome:
 
    $snmp_contact = extlookup(\"snmp_contact\")
 
-The obove code shows some other features, you can use any fact or variable that
+The above code shows some other features, you can use any fact or variable that
 is in scope by simply using %{varname} in your data files, you can return arrays
 by just having multiple values in the csv after the initial variable name.
 
@@ -91,14 +91,9 @@ This is for back compatibility to interpolate variables with %. % interpolation 
 
   raise Puppet::ParseError, ("extlookup(): wrong number of arguments (#{args.length}; must be <= 3)") if args.length > 3
 
-  extlookup_datadir = lookupvar('extlookup_datadir')
-  extlookup_precedence = Array.new
+  extlookup_datadir = undef_as('',lookupvar('::extlookup_datadir'))
 
-  extlookup_precedence = lookupvar('extlookup_precedence').collect do |var|
-    var.gsub(/%\{(.+?)\}/) do |capture|
-      lookupvar($1)
-    end
-  end
+  extlookup_precedence = undef_as([],lookupvar('::extlookup_precedence')).collect { |var| var.gsub(/%\{(.+?)\}/) { lookupvar("::#{$1}") } }
 
   datafiles = Array.new
 

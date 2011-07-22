@@ -1,11 +1,10 @@
-#!/usr/bin/env ruby
-
-require File.dirname(__FILE__) + '/../../spec_helper'
+#!/usr/bin/env rspec
+require 'spec_helper'
 
 require 'puppet/parser/lexer'
 
 # This is a special matcher to match easily lexer output
-Spec::Matchers.define :be_like do |*expected|
+RSpec::Matchers.define :be_like do |*expected|
   match do |actual|
     expected.zip(actual).all? { |e,a| !e or a[0] == e or (e.is_a? Array and a[0] == e[0] and (a[1] == e[1] or (a[1].is_a?(Hash) and a[1][:value] == e[1]))) }
   end
@@ -29,6 +28,14 @@ describe Puppet::Parser::Lexer do
       @lexer.slurpstring("'")
 
       @lexer.line.should == 10
+    end
+
+    it "should not think the terminator is escaped, when preceeded by an even number of backslashes" do
+      @lexer.line = 10
+      @lexer.string = "here\nis\nthe\nstring\\\\'with\nextra\njunk"
+      @lexer.slurpstring("'")
+
+      @lexer.line.should == 13
     end
   end
 end
@@ -416,6 +423,7 @@ describe Puppet::Parser::Lexer,"when lexing strings" do
     %q{'single quoted string with an escaped "\\\\"'}               => [[:STRING,'single quoted string with an escaped "\\\\"']],
     %q{"string with an escaped '\\"'"}                              => [[:STRING,"string with an escaped '\"'"]],
     %q{"string with an escaped '\\$'"}                              => [[:STRING,"string with an escaped '$'"]],
+    %Q{"string with a line ending with a backslash: \\\nfoo"}       => [[:STRING,"string with a line ending with a backslash: foo"]],
     %q{"string with $v (but no braces)"}                            => [[:DQPRE,"string with "],[:VARIABLE,'v'],[:DQPOST,' (but no braces)']],
     %q["string with ${v} in braces"]                                => [[:DQPRE,"string with "],[:VARIABLE,'v'],[:DQPOST,' in braces']],
     %q["string with ${qualified::var} in braces"]                   => [[:DQPRE,"string with "],[:VARIABLE,'qualified::var'],[:DQPOST,' in braces']],
@@ -516,6 +524,22 @@ describe Puppet::Parser::Lexer, "when lexing comments" do
     @lexer.string = "{"
 
     @lexer.expects(:commentpush)
+
+    @lexer.fullscan
+  end
+
+  it "should add a new comment stack level on LPAREN" do
+    @lexer.string = "("
+
+    @lexer.expects(:commentpush)
+
+    @lexer.fullscan
+  end
+
+  it "should pop the current comment on RPAREN" do
+    @lexer.string = ")"
+
+    @lexer.expects(:commentpop)
 
     @lexer.fullscan
   end
@@ -642,14 +666,24 @@ describe "Puppet::Parser::Lexer in the old tests" do
   end
 end
 
-require 'puppettest/support/utils'
 describe "Puppet::Parser::Lexer in the old tests when lexing example files" do
-  extend PuppetTest::Support::Utils
-  textfiles do |file|
+  my_fixtures('*.pp') do |file|
     it "should correctly lex #{file}" do
       lexer = Puppet::Parser::Lexer.new
       lexer.file = file
       lambda { lexer.fullscan }.should_not raise_error
     end
+  end
+end
+
+describe "when trying to lex an non-existent file" do
+  include PuppetSpec::Files
+
+  it "should return an empty list of tokens" do
+    lexer = Puppet::Parser::Lexer.new
+    lexer.file = nofile = tmpfile('lexer')
+    File.exists?(nofile).should == false
+
+    lexer.fullscan.should == [[false,false]]
   end
 end

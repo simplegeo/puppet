@@ -1,17 +1,3 @@
-#  Created by Jeff McCune on 2007-07-22
-#  Copyright (c) 2007. All rights reserved.
-#
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation (version 2 of the License)
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston MA  02110-1301 USA
-
 require 'puppet'
 require 'puppet/provider/nameservice'
 require 'facter/util/plist'
@@ -321,6 +307,31 @@ class DirectoryService < Puppet::Provider::NameService
     password_hash
   end
 
+  # Unlike most other *nixes, OS X doesn't provide built in functionality
+  # for automatically assigning uids and gids to accounts, so we set up these
+  # methods for consumption by functionality like --mkusers
+  # By default we restrict to a reasonably sane range for system accounts
+  def self.next_system_id(id_type, min_id=20)
+    dscl_args = ['.', '-list']
+    if id_type == 'uid'
+      dscl_args << '/Users' << 'uid'
+    elsif id_type == 'gid'
+      dscl_args << '/Groups' << 'gid'
+    else
+      fail("Invalid id_type #{id_type}. Only 'uid' and 'gid' supported")
+    end
+    dscl_out = dscl(dscl_args)
+    # We're ok with throwing away negative uids here.
+    ids = dscl_out.split.compact.collect { |l| l.to_i if l.match(/^\d+$/) }
+    ids.compact!.sort! { |a,b| a.to_f <=> b.to_f }
+    # We're just looking for an unused id in our sorted array.
+    ids.each_index do |i|
+      next_id = ids[i] + 1
+      return next_id if ids[i+1] != next_id and next_id >= min_id
+    end
+  end
+
+
   def ensure=(ensure_value)
     super
     # We need to loop over all valid properties for the type we're
@@ -422,7 +433,14 @@ class DirectoryService < Puppet::Provider::NameService
     # Now we create all the standard properties
     Puppet::Type.type(@resource.class.name).validproperties.each do |property|
       next if property == :ensure
-      if value = @resource.should(property) and value != ""
+      value = @resource.should(property)
+      if property == :gid and value.nil?
+        value = self.class.next_system_id(id_type='gid')
+      end
+      if property == :uid and value.nil?
+        value = self.class.next_system_id(id_type='uid')
+      end
+      if value != "" and not value.nil?
         if property == :members
           add_members(nil, value)
         else
@@ -442,7 +460,7 @@ class DirectoryService < Puppet::Provider::NameService
 
   def remove_unwanted_members(current_members, new_members)
     current_members.each do |member|
-      if not new_members.include?(member)
+      if not new_members.flatten.include?(member)
         cmd = [:dseditgroup, "-o", "edit", "-n", ".", "-d", member, @resource[:name]]
         begin
           execute(cmd)
@@ -454,7 +472,7 @@ class DirectoryService < Puppet::Provider::NameService
   end
 
   def add_members(current_members, new_members)
-    new_members.each do |new_member|
+    new_members.flatten.each do |new_member|
       if current_members.nil? or not current_members.include?(new_member)
         cmd = [:dseditgroup, "-o", "edit", "-n", ".", "-a", new_member, @resource[:name]]
         begin

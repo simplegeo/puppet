@@ -312,7 +312,8 @@ class Puppet::Parser::Lexer
   def file=(file)
     @file = file
     @line = 1
-    @scanner = StringScanner.new(File.read(file))
+    contents = File.exists?(file) ? File.read(file) : ""
+    @scanner = StringScanner.new(contents)
   end
 
   def shift_token
@@ -476,8 +477,11 @@ class Puppet::Parser::Lexer
         @expected.pop
       end
 
-      if final_token.name == :LBRACE
+      if final_token.name == :LBRACE or final_token.name == :LPAREN
         commentpush
+      end
+      if final_token.name == :RPAREN
+        commentpop
       end
 
       yield [final_token.name, token_value]
@@ -520,15 +524,16 @@ class Puppet::Parser::Lexer
   def slurpstring(terminators,escapes=%w{ \\  $ ' " n t s }+["\n"],ignore_invalid_escapes=false)
     # we search for the next quote that isn't preceded by a
     # backslash; the caret is there to match empty strings
-    str = @scanner.scan_until(/([^\\]|^)[#{terminators}]/) or lex_error "Unclosed quote after '#{last}' in '#{rest}'"
+    str = @scanner.scan_until(/([^\\]|^|[^\\])([\\]{2})*[#{terminators}]/) or lex_error "Unclosed quote after '#{last}' in '#{rest}'"
     @line += str.count("\n") # literal carriage returns add to the line count.
-    str.gsub!(/\\(.)/) {
+    str.gsub!(/\\(.)/m) {
       ch = $1
       if escapes.include? ch
         case ch
         when 'n'; "\n"
         when 't'; "\t"
         when 's'; " "
+        when "\n"; ''
         else      ch
         end
       else
@@ -543,7 +548,7 @@ class Puppet::Parser::Lexer
     value,terminator = slurpstring('"$')
     token_queue << [TOKENS[token_type[terminator]],preamble+value]
     if terminator != '$' or @scanner.scan(/\{/)
-      token_queue.shift 
+      token_queue.shift
     elsif var_name = @scanner.scan(%r{(\w*::)*\w+|[0-9]})
       token_queue << [TOKENS[:VARIABLE],var_name]
       tokenize_interpolated_string(DQ_continuation_token_types)
